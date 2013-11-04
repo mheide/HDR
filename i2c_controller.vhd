@@ -35,8 +35,8 @@ begin
 			i2c_sclk_o <= '0';
 		end if;
 	end process sclk_prc;
-	
-	counter : process (clk_i, rst_n_i) is
+
+	counter : process(clk_i, rst_n_i) is
 	begin
 		if rst_n_i = '0' then
 			sd_counter <= 41;
@@ -48,7 +48,6 @@ begin
 			end if;
 		end if;
 	end process counter;
-	
 
 	main_prc : process(clk_i, rst_n_i) is
 	begin
@@ -63,20 +62,61 @@ begin
 		elsif rising_edge(clk_i) then
 			case sd_counter is
 				when 0 =>
-					ack1 <= '0';
-					ack2 <= '0';
-					ack3 <= '0';
-					ack4 <= '0';
+					ack1     <= '0';
+					ack2     <= '0';
+					ack3     <= '0';
+					ack4     <= '0';
 					end_flag <= '0';
-					sdo <= '1';
-					sclk <= '1';
+					sdo      <= '1';
+					sclk     <= '1';
 				when 1 =>
-					sd <= i2c_data_i;
-					sdo <= '0';
-				when 2 => sclk <= '0';
-				when 3 => sdo <= sd(31);
-				when 4 => sdo <= sd(30);
-				when 5 => sdo <= sd(29);
+					sd          <= i2c_data_i;
+					sdo         <= '0';
+				when 2 => sclk  <= '0';
+				when 3 => sdo   <= sd(31);
+				when 4 => sdo   <= sd(30);
+				when 5 => sdo   <= sd(29);
+				when 6 => sdo   <= sd(28);
+				when 7 => sdo   <= sd(27);
+				when 8 => sdo   <= sd(26);
+				when 9 => sdo   <= sd(25);
+				when 10 => sdo  <= sd(24);
+				when 11 => sdo  <= '1'; --ack
+				when 12 => sdo  <= sd(23);
+					ack1        <= i2c_sdat_io;
+				when 13 => sdo  <= sd(22);
+				when 14 => sdo  <= sd(21);
+				when 15 => sdo  <= sd(20);
+				when 16 => sdo  <= sd(19);
+				when 17 => sdo  <= sd(18);
+				when 18 => sdo  <= sd(17);
+				when 19 => sdo  <= sd(16);
+				when 20 => sdo  <= '1'; --ack
+				when 21 => sdo  <= sd(15);
+					ack2        <= i2c_sdat_io;
+				when 22 => sdo  <= sd(14);
+				when 23 => sdo  <= sd(13);
+				when 24 => sdo  <= sd(12);
+				when 25 => sdo  <= sd(11);
+				when 26 => sdo  <= sd(10);
+				when 27 => sdo  <= sd(9);
+				when 28 => sdo  <= sd(8);
+				when 29 => sdo  <= '1'; --ack
+				when 30 => sdo  <= sd(7);
+				when 31 => sdo  <= sd(6);
+				when 32 => sdo  <= sd(5);
+				when 33 => sdo  <= sd(4);
+				when 34 => sdo  <= sd(3);
+				when 35 => sdo  <= sd(2);
+				when 36 => sdo  <= sd(1);
+				when 37 => sdo  <= sd(0);
+				when 38 => sdo  <= '1'; --ack
+				when 39 => sdo  <= '0';
+					sclk        <= '0';
+					ack4        <= i2c_sdat_io;
+				when 40 => sclk <= '1';
+				when 41 => sdo  <= '1';
+					end_flag    <= '1';
 				when others => null;
 			end case;
 
