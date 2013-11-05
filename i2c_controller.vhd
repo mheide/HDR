@@ -17,22 +17,25 @@ end entity i2c_controller;
 architecture Behavioral of i2c_controller is
 	signal sdo                         : std_logic                     := '0';
 	signal sclk                        : std_logic                     := '0';
+	signal i2c_sclk                    : std_logic                     := '0';
+	signal i2c_sdat                    : std_logic                     := '0';
 	signal end_flag                    : std_logic                     := '0';
 	signal sd                          : std_logic_vector(31 downto 0) := (others => '0');
 	signal sd_counter                  : natural range 0 to 41         := 0;
 	signal ack, ack1, ack2, ack3, ack4 : std_logic                     := '0';
 
 begin
-	ack <= '1' when ack1 = '1' or ack2 = '1' or ack3 = '1' or ack4 = '1' else '0';
-
-	sclk_prc : process is
+	ack         <= '1' when ack1 = '1' or ack2 = '1' or ack3 = '1' or ack4 = '1' else '0';
+	i2c_sclk_o <= '0' when i2c_sclk = '0' else 'Z';
+	i2c_sdat_io <= '0' when sdo = '0' else 'Z';
+	sclk_prc : process(clk_i) is
 	begin
 		if sclk = '1' then
-			i2c_sclk_o <= '1';
+			i2c_sclk <= '1';
 		elsif sd_counter > 3 and sd_counter < 40 then
-			i2c_sclk_o <= not clk_i;
+			i2c_sclk <= not clk_i;
 		else
-			i2c_sclk_o <= '0';
+			i2c_sclk <= '0';
 		end if;
 	end process sclk_prc;
 
