@@ -54,7 +54,7 @@ begin
 
 	main_prc : process(clk_i, rst_n_i) is
 	begin
-		if rst_n_i = '0' then
+		if rst_n_i = '0' then  
 			sclk     <= '1';
 			sdo      <= '1';
 			end_flag <= '1';
