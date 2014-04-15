@@ -385,20 +385,16 @@ architecture RTL of DE4_D5M_TLVL is
     signal Read_DATA2         : std_logic_vector(15 downto 0);
     signal Read_DATA1_SODIMM1 : std_logic_vector(15 downto 0);
     signal Read_DATA2_SODIMM1 : std_logic_vector(15 downto 0);
-    signal VGA_CTRL_CLK       : std_logic;
     signal mCCD_DATA          : std_logic_vector(11 downto 0);
     signal mCCD_DVAL          : std_logic;
-    signal mCCD_DVAL_d        : std_logic;
     signal X_Cont             : std_logic_vector(15 downto 0);
     signal Y_Cont             : std_logic_vector(15 downto 0);
-    signal X_ADDR             : std_logic_vector(9 downto 0);
     signal Frame_Cont         : std_logic_vector(31 downto 0);
     signal DLY_RST_0          : std_logic;
     signal DLY_RST_1          : std_logic;
     signal DLY_RST_2          : std_logic;
     signal DLY_RST_3          : std_logic;
     signal DLY_RST_4          : std_logic;
-    signal Read               : std_logic;
     signal rCCD_DATA          : std_logic_vector(11 downto 0);
     signal rCCD_LVAL          : std_logic;
     signal rCCD_FVAL          : std_logic;
@@ -406,65 +402,35 @@ architecture RTL of DE4_D5M_TLVL is
     signal sCCD_G             : std_logic_vector(11 downto 0);
     signal sCCD_B             : std_logic_vector(11 downto 0);
     signal sCCD_DVAL          : std_logic;
-    signal oVGA_R             : std_logic_vector(9 downto 0);
-    signal oVGA_G             : std_logic_vector(9 downto 0);
-    signal oVGA_B             : std_logic_vector(9 downto 0);
-    signal rClk               : std_logic_vector(1 downto 0);
-    --power on start
-    signal auto_start         : std_logic;
-    --ddr2
-    signal ip_init_done       : std_logic;
-    signal reset_n            : std_logic;
-    signal wrt_full_port0     : std_logic;
-    signal wrt_full_port1     : std_logic;
-    --dvi
-    signal reset_n_dvi        : std_logic;
-    signal pll_100M           : std_logic;
-    signal pll_100K           : std_logic;
-    signal gen_sck            : std_logic;
-    signal gen_i2s            : std_logic;
-    signal gen_ws             : std_logic;
-    signal D5M_PIXLCLKn       : std_logic;
-    --concat color ports to 32 - bit input stream to ddr2
-    signal iWriteData         : std_logic_vector(31 downto 0);
-    --external pll config
-    signal clk1_set_wr        : std_logic_vector(3 downto 0);
-    signal clk2_set_wr        : std_logic_vector(3 downto 0);
-    signal clk3_set_wr        : std_logic_vector(3 downto 0);
-    signal rstn               : std_logic;
-    signal conf_ready         : std_logic;
-    signal counter_max        : std_logic;
-    signal counter_inc        : std_logic_vector(7 downto 0);
-    signal auto_set_counter   : std_logic_vector(7 downto 0) := (others => '0');
-    signal conf_wr            : std_logic;
 
-    --ddr2 map signals
-    signal ddr2_addr   : std_logic_vector(15 downto 0);
-    signal ddr2_ba     : std_logic_vector(2 downto 0); --bank address
-    signal ddr2_cas_n  : std_logic;     --cas latency
-    signal ddr2_cas_nv : std_logic_vector(0 downto 0);
-    signal ddr2_cke    : std_logic_vector(0 downto 0); --clock enable
-    signal ddr2_clk    : std_logic_vector(1 downto 0); --diff. clock
-    signal ddr2_clk_n  : std_logic_vector(1 downto 0); --diff. clock
-    signal ddr2_cs_n   : std_logic_vector(0 downto 0); --command signal
-    signal ddr2_dm     : std_logic_vector(7 downto 0); --drive mode
-    signal ddr2_dq     : std_logic_vector(63 downto 0); --data queue
-    signal ddr2_dqs    : std_logic_vector(7 downto 0); --strobe
-    signal ddr2_dqsn   : std_logic_vector(7 downto 0);
-    signal ddr2_odt    : std_logic_vector(0 downto 0);
-    signal ddr2_ras_n  : std_logic;
-    signal ddr2_ras_nv : std_logic_vector(0 downto 0);
-    signal ddr2_sa     : std_logic_vector(1 downto 0);
-    signal ddr2_scl    : std_logic;
-    signal ddr2_sda    : std_logic;
-    signal ddr2_we_n   : std_logic;
-    signal ddr2_wenv   : std_logic_vector(0 downto 0);
+    --power on start
+    signal auto_start       : std_logic;
+    --ddr2
+    signal ip_init_done     : std_logic;
+    signal reset_n          : std_logic;
+    signal wrt_full_port0   : std_logic;
+    --dvi
+    signal reset_n_dvi      : std_logic;
+    signal pll_100M         : std_logic;
+    signal pll_100K         : std_logic;
+    signal D5M_PIXLCLKn     : std_logic;
+    --concat color ports to 32 - bit input stream to ddr2
+    signal iWriteData       : std_logic_vector(31 downto 0);
+    --external pll config
+    signal clk1_set_wr      : std_logic_vector(3 downto 0);
+    signal clk2_set_wr      : std_logic_vector(3 downto 0);
+    signal clk3_set_wr      : std_logic_vector(3 downto 0);
+    signal rstn             : std_logic;
+    signal conf_ready       : std_logic;
+    signal counter_max      : std_logic;
+    signal counter_inc      : std_logic_vector(7 downto 0);
+    signal auto_set_counter : std_logic_vector(7 downto 0) := (others => '0');
+    signal conf_wr          : std_logic;
 
     --ddr2 multi port signals
     signal read_rstn     : std_logic;
     signal read_clk      : std_logic;   --vpg_pclk in early verilog design
     signal read_data_1_2 : std_logic_vector(31 downto 0);
-    signal ipinit_done   : std_logic;
 
     --read fifo
     signal readp_empty : std_logic_vector(c_pictures_count - 1 downto 0);
@@ -480,8 +446,6 @@ architecture RTL of DE4_D5M_TLVL is
     --dvi
     --1280x1024 SXGA, dvi controller
     constant vpg_mode      : std_logic_vector(3 downto 0) := x"3";
-    signal vpg_disp_mode   : std_logic_vector(3 downto 0);
-    signal vpg_disp_color  : std_logic_vector(1 downto 0);
     signal vpg_pclk        : std_logic;
     signal vpg_de          : std_logic;
     signal vpg_hs          : std_logic;
