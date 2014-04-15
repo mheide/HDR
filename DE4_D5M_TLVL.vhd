@@ -175,63 +175,6 @@ end entity DE4_D5M_TLVL;
 library ieee;
 use ieee.std_logic_1164.all;
 architecture RTL of DE4_D5M_TLVL is
-    signal Read_DATA1         : std_logic_vector(15 downto 0);
-    signal Read_DATA2         : std_logic_vector(15 downto 0);
-    signal Read_DATA1_SODIMM1 : std_logic_vector(15 downto 0);
-    signal Read_DATA2_SODIMM1 : std_logic_vector(15 downto 0);
-    signal VGA_CTRL_CLK       : std_logic;
-    signal mCCD_DATA          : std_logic_vector(11 downto 0);
-    signal mCCD_DVAL          : std_logic;
-    signal mCCD_DVAL_d        : std_logic;
-    signal X_Cont             : std_logic_vector(15 downto 0);
-    signal Y_Cont             : std_logic_vector(15 downto 0);
-    signal X_ADDR             : std_logic_vector(9 downto 0);
-    signal Frame_Cont         : std_logic_vector(31 downto 0);
-    signal DLY_RST_0          : std_logic;
-    signal DLY_RST_1          : std_logic;
-    signal DLY_RST_2          : std_logic;
-    signal DLY_RST_3          : std_logic;
-    signal DLY_RST_4          : std_logic;
-    signal Read               : std_logic;
-    signal rCCD_DATA          : std_logic_vector(11 downto 0);
-    signal rCCD_LVAL          : std_logic;
-    signal rCCD_FVAL          : std_logic;
-    signal sCCD_R             : std_logic_vector(11 downto 0);
-    signal sCCD_G             : std_logic_vector(11 downto 0);
-    signal sCCD_B             : std_logic_vector(11 downto 0);
-    signal sCCD_DVAL          : std_logic;
-    signal oVGA_R             : std_logic_vector(9 downto 0);
-    signal oVGA_G             : std_logic_vector(9 downto 0);
-    signal oVGA_B             : std_logic_vector(9 downto 0);
-    signal rClk               : std_logic_vector(1 downto 0);
-    --power on start
-    signal auto_start         : std_logic;
-    --ddr2
-    signal ip_init_done       : std_logic;
-    signal reset_n            : std_logic;
-    signal wrt_full_port0     : std_logic;
-    signal wrt_full_port1     : std_logic;
-    --dvi
-    signal reset_n_dvi        : std_logic;
-    signal pll_100M           : std_logic;
-    signal pll_100K           : std_logic;
-    signal gen_sck            : std_logic;
-    signal gen_i2s            : std_logic;
-    signal gen_ws             : std_logic;
-    signal D5M_PIXLCLKn       : std_logic;
-    --concat color ports to 32 - bit input stream to ddr2
-    signal iWriteData         : std_logic_vector(31 downto 0);
-    --external pll config
-    signal clk1_set_wr        : std_logic_vector(3 downto 0);
-    signal clk2_set_wr        : std_logic_vector(3 downto 0);
-    signal clk3_set_wr        : std_logic_vector(3 downto 0);
-    signal rstn               : std_logic;
-    signal conf_ready         : std_logic;
-    signal counter_max        : std_logic;
-    signal counter_inc        : std_logic_vector(7 downto 0);
-    signal auto_set_counter   : std_logic_vector(7 downto 0) := (others => '0');
-    signal conf_wr            : std_logic;
-
     component ddr2_multi_port
         port(
             ddr2_status_local_init_done          : out   std_logic; --             ddr2_status.local_init_done
@@ -351,6 +294,150 @@ architecture RTL of DE4_D5M_TLVL is
         );
     end component;
 
+    component I2C_CCD_Config
+        port(
+            iCLK            : in    std_logic;
+            iRST_N          : in    std_logic;
+            iZOOM_MODE_SW   : in    std_logic;
+            I2C_SCLK        : out   std_logic;
+            I2C_SDAT        : inout std_logic;
+            iEXPOSURE_ADJ   : in    std_logic;
+            iEXPOSURE_DEC_p : in    std_logic
+        );
+    end component;
+
+    component sys_pll
+        port(
+            areset : in  std_logic;
+            inclk0 : in  std_logic;
+            c0     : out std_logic;
+            c1     : out std_logic;
+            c2     : out std_logic;
+            c3     : out std_logic;
+            locked : out std_logic
+        );
+    end component;
+
+    component fifo_pll
+        port(
+            areset : in  std_logic;
+            inclk0 : in  std_logic;
+            c0     : out std_logic;
+            locked : out std_logic
+        );
+    end component;
+
+    component vpg
+        port(
+            clk_100     : in  std_logic;
+            reset_n     : in  std_logic;
+            mode        : in  std_logic_vector(3 downto 0);
+            mode_change : in  std_logic;
+            disp_color  : in  std_logic_vector(1 downto 0);
+            vpg_pclk    : out std_logic;
+            vpg_de      : out std_logic;
+            vpg_hs      : std_logic;
+            vpg_vs      : std_logic;
+            vpg_r       : std_logic_vector(7 downto 0);
+            vpg_g       : std_logic_vector(7 downto 0);
+            vpg_b       : std_logic_vector(7 downto 0)
+        );
+    end component;
+
+    component read_fifo
+        generic(c_pictures_count : natural := c_pictures_count;
+                c_bits           : natural := c_pix_bits);
+        port(clk_400_i     : in  std_logic;
+             vpg_clk_i     : in  std_logic;
+             vpg_de_i      : in  std_logic;
+             rst_i         : in  std_logic;
+             rst_o         : out std_logic;
+             readp_empty_i : in  std_logic_vector(c_pictures_count - 1 downto 0);
+             readp_ready_i : in  std_logic_vector(c_pictures_count - 1 downto 0);
+             readp_ack_o   : out std_logic_vector(c_pictures_count - 1 downto 0);
+             data_i        : in  std_logic_vector(c_bits * c_pictures_count - 1 downto 0);
+             data_o        : out std_logic_vector(c_bits * c_pictures_count - 1 downto 0));
+    end component read_fifo;
+
+    component hdr_wrapper
+        port(clk_i     : in  std_logic;
+             rst_n_i   : in  std_logic;
+             red_0_i   : in  std_logic_vector(7 downto 0);
+             green_0_i : in  std_logic_vector(7 downto 0);
+             blue_0_i  : in  std_logic_vector(7 downto 0);
+             red_1_i   : in  std_logic_vector(7 downto 0);
+             green_1_i : in  std_logic_vector(7 downto 0);
+             blue_1_i  : in  std_logic_vector(7 downto 0);
+             red_o     : out std_logic_vector(7 downto 0);
+             green_o   : out std_logic_vector(7 downto 0);
+             blue_o    : out std_logic_vector(7 downto 0));
+    end component hdr_wrapper;
+
+    component fan_control
+        port(
+            clk_i     : in  std_logic;
+            rst_n_i   : in  std_logic;
+            fan_pwm_o : out std_logic
+        );
+    end component;
+
+    signal Read_DATA1         : std_logic_vector(15 downto 0);
+    signal Read_DATA2         : std_logic_vector(15 downto 0);
+    signal Read_DATA1_SODIMM1 : std_logic_vector(15 downto 0);
+    signal Read_DATA2_SODIMM1 : std_logic_vector(15 downto 0);
+    signal VGA_CTRL_CLK       : std_logic;
+    signal mCCD_DATA          : std_logic_vector(11 downto 0);
+    signal mCCD_DVAL          : std_logic;
+    signal mCCD_DVAL_d        : std_logic;
+    signal X_Cont             : std_logic_vector(15 downto 0);
+    signal Y_Cont             : std_logic_vector(15 downto 0);
+    signal X_ADDR             : std_logic_vector(9 downto 0);
+    signal Frame_Cont         : std_logic_vector(31 downto 0);
+    signal DLY_RST_0          : std_logic;
+    signal DLY_RST_1          : std_logic;
+    signal DLY_RST_2          : std_logic;
+    signal DLY_RST_3          : std_logic;
+    signal DLY_RST_4          : std_logic;
+    signal Read               : std_logic;
+    signal rCCD_DATA          : std_logic_vector(11 downto 0);
+    signal rCCD_LVAL          : std_logic;
+    signal rCCD_FVAL          : std_logic;
+    signal sCCD_R             : std_logic_vector(11 downto 0);
+    signal sCCD_G             : std_logic_vector(11 downto 0);
+    signal sCCD_B             : std_logic_vector(11 downto 0);
+    signal sCCD_DVAL          : std_logic;
+    signal oVGA_R             : std_logic_vector(9 downto 0);
+    signal oVGA_G             : std_logic_vector(9 downto 0);
+    signal oVGA_B             : std_logic_vector(9 downto 0);
+    signal rClk               : std_logic_vector(1 downto 0);
+    --power on start
+    signal auto_start         : std_logic;
+    --ddr2
+    signal ip_init_done       : std_logic;
+    signal reset_n            : std_logic;
+    signal wrt_full_port0     : std_logic;
+    signal wrt_full_port1     : std_logic;
+    --dvi
+    signal reset_n_dvi        : std_logic;
+    signal pll_100M           : std_logic;
+    signal pll_100K           : std_logic;
+    signal gen_sck            : std_logic;
+    signal gen_i2s            : std_logic;
+    signal gen_ws             : std_logic;
+    signal D5M_PIXLCLKn       : std_logic;
+    --concat color ports to 32 - bit input stream to ddr2
+    signal iWriteData         : std_logic_vector(31 downto 0);
+    --external pll config
+    signal clk1_set_wr        : std_logic_vector(3 downto 0);
+    signal clk2_set_wr        : std_logic_vector(3 downto 0);
+    signal clk3_set_wr        : std_logic_vector(3 downto 0);
+    signal rstn               : std_logic;
+    signal conf_ready         : std_logic;
+    signal counter_max        : std_logic;
+    signal counter_inc        : std_logic_vector(7 downto 0);
+    signal auto_set_counter   : std_logic_vector(7 downto 0) := (others => '0');
+    signal conf_wr            : std_logic;
+
     --ddr2 map signals
     signal ddr2_addr   : std_logic_vector(15 downto 0);
     signal ddr2_ba     : std_logic_vector(2 downto 0); --bank address
@@ -376,11 +463,39 @@ architecture RTL of DE4_D5M_TLVL is
     --ddr2 multi port signals
     signal read_rstn     : std_logic;
     signal read_clk      : std_logic;   --vpg_pclk in early verilog design
-    signal readp_ack     : std_logic_vector(1 downto 0); --vpg_de in early design
     signal read_data_1_2 : std_logic_vector(31 downto 0);
-    signal readp_empty   : std_logic_vector(1 downto 0);
-    signal readp_ready   : std_logic_vector(1 downto 0);
     signal ipinit_done   : std_logic;
+
+    --read fifo
+    signal readp_empty : std_logic_vector(c_pictures_count - 1 downto 0);
+    signal readp_ready : std_logic_vector(c_pictures_count - 1 downto 0);
+    signal readp_ack   : std_logic_vector(c_pictures_count - 1 downto 0);
+    signal write_cnt   : std_logic_vector(15 downto 0);
+    signal data0       : std_logic_vector(23 downto 0);
+    signal data1       : std_logic_vector(23 downto 0);
+
+    --pll
+    signal pll_108M        : std_logic;
+    signal locked_fifo_pll : std_logic;
+    --dvi
+    --1280x1024 SXGA, dvi controller
+    constant vpg_mode      : std_logic_vector(3 downto 0) := x"3";
+    signal vpg_disp_mode   : std_logic_vector(3 downto 0);
+    signal vpg_disp_color  : std_logic_vector(1 downto 0);
+    signal vpg_pclk        : std_logic;
+    signal vpg_de          : std_logic;
+    signal vpg_hs          : std_logic;
+    signal vpg_vs          : std_logic;
+    signal vpg_data        : std_logic_vector(23 downto 0);
+    signal vpg_reset_n     : std_logic;
+
+    signal hdr_reset_n : std_logic;
+
+    constant COLOR_RGB444     : std_logic_vector(1 downto 0) := "00";
+    signal all_read_data_fifo : std_logic_vector(c_pix_bits * c_pictures_count - 1 downto 0);
+    signal all_read_data      : std_logic_vector(c_pix_bits * c_pictures_count - 1 downto 0);
+
+    signal pix_data : std_logic_vector(c_pix_bits - 1 downto 0);
 
 begin
     Read_DATA1 <= read_data_1_2(31 downto 16);
@@ -404,6 +519,33 @@ begin
     clk2_set_wr <= x"4";
     clk3_set_wr <= x"4";
 
+    D5M_TRIGGER <= '1';
+    D5M_RESETn  <= DLY_RST_1;
+
+    DVI_TX_ISEL  <= '0';                --disable i2c
+    DVI_TX_SCL   <= '1';
+    DVI_TX_HTPLG <= '1';
+    DVI_TX_SDA   <= '1';
+    DVI_TX_PD_N  <= '1';
+
+    DVI_TX_DE  <= vpg_de;
+    DVI_TX_HS  <= vpg_hs;
+    DVI_TX_VS  <= vpg_vs;
+    DVI_TX_CLK <= vpg_pclk;
+
+    DVI_TX_D <= pix_data when SLIDE_SW(3) = '1' else data0;
+    DVI_TX_D <= data1 when SLIDE_SW(2) = '1' else data0;
+
+    all_read_data <= Read_DATA2(9 downto 2) & Read_DATA1(14 downto 10) & Read_DATA2(14 downto 12) & Read_DATA1(9 downto 2) & Read_DATA2_SODIMM1(9 downto 2) & Read_DATA1_SODIMM1(14 downto 10) & Read_DATA2_SODIMM1(14 downto 12) & Read_DATA1_SODIMM1(9 downto 2);
+
+    data0 <= all_read_data_fifo(c_pix_bits * c_pictures_count - 1 downto c_pix_bits * c_pictures_count / 2);
+    data1 <= all_read_data_fifo(c_pix_bits * c_pictures_count / 2 - 1 downto 0);
+
+    vpg_reset_n <= '1' when read_rstn = '1' and reset_n_dvi = '1' and locked_fifo_pll = '1'
+        else '0';
+
+    auto_start <= '1' when BUTTON(0) = '1' and DLY_RST_3 = '1' and DLY_RST_4 = '0' else '0';
+
     rstn        <= BUTTON(0);
     counter_max <= '1' when auto_set_counter = x"FF" else '0';
     counter_inc <= std_logic_vector(unsigned(auto_set_counter) + 1);
@@ -421,6 +563,56 @@ begin
             end if;
         end if;
     end process;
+
+    drm_read_prc : process(D5M_PIXLCLK, DLY_RST_1) is
+    begin
+        if DLY_RST_1 = '0' then
+            rCCD_DATA <= (others => '0');
+            rCCD_LVAL <= '0';
+            rCCD_FVAL <= '0';
+        elsif rising_edge(D5M_PIXLCLK) then
+            rCCD_DATA <= D5M_D;
+            rCCD_LVAL <= D5M_LVAL;
+            rCCD_FVAL <= D5M_FVAL;
+        end if;
+    end process drm_read_prc;
+
+    init_fifo_prc : process(D5M_PIXLCLKn, DLY_RST_1) is
+    begin
+        if DLY_RST_1 = '0' then
+            write_cnt <= (others => '0');
+        elsif rising_edge(D5M_PIXLCLKn) then
+            if sCCD_DVAL = '1' and write_cnt /= x"FFFF" then
+                write_cnt <= std_logic_vector(unsigned(write_cnt) + 1);
+            end if;
+        end if;
+    end process init_fifo_prc;
+
+    init_fifo_prc2 : process(D5M_PIXLCLKn, DLY_RST_1) is
+    begin
+        if DLY_RST_1 = '0' then
+            read_rstn <= '0';
+        elsif rising_edge(D5M_PIXLCLKn) then
+            if write_cnt = x"0200" then
+                read_rstn <= '1';
+            end if;
+        end if;
+    end process init_fifo_prc2;
+
+    exp_pll : ext_pll_ctrl
+        port map(osc_50      => OSC_50_BANK2,
+                 rstn        => rstn,
+                 clk1_set_wr => clk1_set_wr,
+                 clk1_set_rd => open,
+                 clk2_set_wr => clk2_set_wr,
+                 clk2_set_rd => open,
+                 clk3_set_wr => clk3_set_wr,
+                 clk3_set_rd => open,
+                 conf_wr     => conf_wr,
+                 conf_rd     => open,
+                 conf_ready  => conf_ready,
+                 max_sclk    => MAX_I2C_SCLK,
+                 max_sdat    => MAX_I2C_SDAT);
 
     ddr2_mp : ddr2_multi_port port map(
             ddr2_status_local_init_done          => open,
@@ -487,19 +679,6 @@ begin
             oRST_4 => DLY_RST_4
         );
 
-    d5m_read : process(D5M_PIXLCLK, DLY_RST_1) is
-    begin
-        if DLY_RST_1 = '0' then         --active low
-            rCCD_DATA <= (others => '0');
-            rCCD_FVAL <= '0';
-            rCCD_LVAL <= '0';
-        elsif rising_edge(D5M_PIXLCLK) then
-            rCCD_DATA <= D5M_D;
-            rCCD_FVAL <= D5M_FVAL;
-            rCCD_LVAL <= D5M_LVAL;
-        end if;
-    end process d5m_read;
-
     ccd : CCD_Capture
         port map(oDATA       => mCCD_DATA,
                  oX_Cont     => X_Cont,
@@ -525,5 +704,75 @@ begin
                  iZoom   => '0',
                  iX_Cont => X_Cont,
                  iY_Cont => Y_Cont);
+
+    i2c_ccd : component I2C_CCD_Config
+        port map(iCLK            => OSC_50_BANK2,
+                 iRST_N          => DLY_RST_2,
+                 iZOOM_MODE_SW   => SLIDE_SW(1),
+                 I2C_SCLK        => D5M_SCLK,
+                 I2C_SDAT        => D5M_SDATA,
+                 iEXPOSURE_ADJ   => BUTTON(1),
+                 iEXPOSURE_DEC_p => SLIDE_SW(0));
+
+    sys_pll_inst : sys_pll
+        port map(areset => '0',
+                 inclk0 => OSC_50_BANK2,
+                 c0     => pll_100M,
+                 c1     => pll_100K,
+                 c2     => D5M_XCLKIN,
+                 c3     => read_clk,
+                 locked => reset_n_dvi);
+
+    fifo_pll_inst : fifo_pll
+        port map(areset => '0',
+                 inclk0 => OSC_50_BANK2,
+                 c0     => pll_108M,
+                 locked => locked_fifo_pll);
+
+    vpg_inst : vpg
+        port map(clk_100     => pll_100K,
+                 reset_n     => vpg_reset_n,
+                 mode        => vpg_mode,
+                 mode_change => '0',
+                 disp_color  => COLOR_RGB444,
+                 vpg_pclk    => vpg_pclk,
+                 vpg_de      => vpg_de,
+                 vpg_hs      => vpg_hs,
+                 vpg_vs      => vpg_vs,
+                 vpg_r       => vpg_data(23 downto 16),
+                 vpg_g       => vpg_data(15 downto 8),
+                 vpg_b       => vpg_data(7 downto 0));
+
+    read_fifo_inst : read_fifo
+        generic map(c_pictures_count => c_pictures_count,
+                    c_bits           => 8)
+        port map(clk_400_i     => read_clk,
+                 vpg_clk_i     => pll_108M,
+                 vpg_de_i      => vpg_de,
+                 rst_i         => vpg_reset_n,
+                 rst_o         => hdr_reset_n,
+                 readp_empty_i => readp_empty,
+                 readp_ready_i => readp_ready,
+                 readp_ack_o   => readp_ack,
+                 data_i        => all_read_data,
+                 data_o        => all_read_data_fifo);
+
+    hdr_inst : hdr_wrapper
+        port map(clk_i     => vpg_pclk,
+                 rst_n_i   => hdr_reset_n,
+                 red_0_i   => data0(23 downto 16),
+                 green_0_i => data0(15 downto 8),
+                 blue_0_i  => data0(7 downto 0),
+                 red_1_i   => data1(23 downto 16),
+                 green_1_i => data1(15 downto 8),
+                 blue_1_i  => data1(7 downto 0),
+                 red_o     => pix_data(23 downto 16),
+                 green_o   => pix_data(15 downto 8),
+                 blue_o    => pix_data(7 downto 0));
+
+    fan_ctrl : fan_control
+        port map(clk_i     => OSC_50_BANK2,
+                 rst_n_i   => rstn,
+                 fan_pwm_o => FAN_CTRL);
 
 end architecture RTL;
