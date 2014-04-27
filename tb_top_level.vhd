@@ -46,10 +46,8 @@ architecture testbench of tb_top_level is
             DQSNeg  : INOUT std_ulogic := 'U'
         );
     end component;
-    
+
     component DE4_D5M_TLVL
-        generic(c_pictures_count : integer := 2;
-                c_pix_bits       : integer := 24);
         port(gclkin        : in    std_logic;
              GCLKOUT_FPGA  : out   std_logic;
              OSC_50_BANK2  : in    std_logic;
@@ -127,25 +125,25 @@ architecture testbench of tb_top_level is
              OTG_OE_n      : out   std_logic;
              OTG_RESET_n   : out   std_logic;
              OTG_WE_n      : out   std_logic;
-             dimm_addr     : out   std_logic_vector(13 downto 0);
-             dimm_ba       : out   std_logic_vector(2 downto 0);
-             dimm_cas_n    : out   std_logic_vector(0 downto 0);
-             dimm_cke      : out   std_logic_vector(1 downto 0);
-             dimm_clk      : inout std_logic_vector(1 downto 0);
-             dimm_clk_n    : inout std_logic_vector(1 downto 0);
-             dimm_cs_n     : out   std_logic_vector(1 downto 0);
-             dimm_dm       : out   std_logic_vector(7 downto 0);
-             dimm_dq       : inout std_logic_vector(63 downto 0);
-             dimm_dqs      : inout std_logic_vector(7 downto 0);
-             dimm_dqsn     : inout std_logic_vector(7 downto 0);
-             dimm_odt      : out   std_logic_vector(1 downto 0);
-             dimm_ras_n    : out   std_logic_vector(0 downto 0);
-             dimm_sa       : out   std_logic_vector(1 downto 0);
-             dimm_scl      : out   std_logic_vector(0 downto 0);
-             dimm_sda      : in    std_logic_vector(0 downto 0);
-             dimm_we_n     : out   std_logic_vector(0 downto 0);
-             dimm_oct_rup  : in    std_logic;
-             dimm_oct_rnd  : in    std_logic;
+             m1_ddr2_addr     : out   std_logic_vector(13 downto 0);
+             m1_ddr2_ba       : out   std_logic_vector(2 downto 0);
+             m1_ddr2_cas_n    : out   std_logic_vector(0 downto 0);
+             m1_ddr2_cke      : out   std_logic_vector(0 downto 0);
+             m1_ddr2_clk      : inout std_logic_vector(1 downto 0);
+             m1_ddr2_clk_n    : inout std_logic_vector(1 downto 0);
+             m1_ddr2_cs_n     : out   std_logic_vector(0 downto 0);
+             m1_ddr2_dm       : out   std_logic_vector(7 downto 0);
+             m1_ddr2_dq       : inout std_logic_vector(63 downto 0);
+             m1_ddr2_dqs      : inout std_logic_vector(7 downto 0);
+             m1_ddr2_dqsn     : inout std_logic_vector(7 downto 0);
+             m1_ddr2_odt      : out   std_logic_vector(0 downto 0);
+             m1_ddr2_ras_n    : out   std_logic_vector(0 downto 0);
+             m1_ddr2_sa       : out   std_logic_vector(1 downto 0);
+             m1_ddr2_scl      : out   std_logic_vector(0 downto 0);
+             m1_ddr2_sda      : in    std_logic_vector(0 downto 0);
+             m1_ddr2_we_n     : out   std_logic_vector(0 downto 0);
+             m1_ddr2_oct_rup  : in    std_logic;
+             m1_ddr2_oct_rnd  : in    std_logic;
              D5M_D         : in    std_logic_vector(11 downto 0);
              D5M_RESETn    : out   std_logic;
              D5M_FVAL      : in    std_logic;
@@ -184,331 +182,228 @@ architecture testbench of tb_top_level is
              HSMC_SCL      : out   std_logic;
              HSMC_SDA      : inout std_logic);
     end component DE4_D5M_TLVL;
-    
-    signal ddr2_odt : std_logic_vector(1 downto 0);
+
+    signal ddr2_odt             : std_logic_vector(0 downto 0);
     signal ddr2_clk, ddr2_clk_n : std_logic_vector(1 downto 0);
-    signal ddr2_cke : std_logic_vector(1 downto 0);
-    signal ddr2_cs_n : std_logic_vector(1 downto 0);
-    signal ddr2_ras_n : std_logic_vector(0 downto 0);
-    signal ddr2_cas_n : std_logic_vector(0 downto 0);
-    signal ddr2_we_n : std_logic_vector(0 downto 0);
-    signal ddr2_ba : std_logic_vector(2 downto 0);
-    signal ddr2_addr : std_logic_vector(13 downto 0);
-    signal ddr2_dq : std_logic_vector(63 downto 0);
-    signal ddr2_dqs, ddr2_dqs_n : std_logic;
+    signal ddr2_cke             : std_logic_vector(0 downto 0);
+    signal ddr2_cs_n            : std_logic_vector(0 downto 0);
+    signal ddr2_ras_n           : std_logic_vector(0 downto 0);
+    signal ddr2_cas_n           : std_logic_vector(0 downto 0);
+    signal ddr2_we_n            : std_logic_vector(0 downto 0);
+    signal ddr2_ba              : std_logic_vector(2 downto 0);
+    signal ddr2_addr            : std_logic_vector(13 downto 0);
+    signal ddr2_dq              : std_logic_vector(63 downto 0);
+    signal ddr2_dm              : std_logic_vector(7 downto 0);
+    signal ddr2_dqs, ddr2_dqs_n : std_logic_vector(7 downto 0);
+
+    signal clock              : std_logic := '0';
+    constant pictures_count : integer   := 2;
+    constant pix_bits       : integer   := 24;
+    constant c_period         : time      := 12.5 ns;
+    --camera
+    signal D5M_D              : std_logic_vector(11 downto 0);
+    signal D5M_RESETn         : std_logic;
+    signal D5M_FVAL           : std_logic;
+    signal D5M_LVAL           : std_logic;
+    signal D5M_PIXLCLK        : std_logic;
+    signal D5M_SCLK           : std_logic;
+    signal D5M_SDATA          : std_logic;
+    signal D5M_STROBE         : std_logic;
+    signal D5M_TRIGGER        : std_logic;
+    signal D5M_XCLKIN         : std_logic;
+    --DVI
+    signal DVI_EDID_WP        : std_logic;
+    signal DVI_RX_CLK         : std_logic;
+    signal DVI_RX_CTL         : std_logic_vector(3 downto 1);
+    signal DVI_RX_D           : std_logic_vector(23 downto 0);
+    signal DVI_RX_DDCSCL      : std_logic;
+    signal DVI_RX_DDCSDA      : std_logic;
+    signal DVI_RX_DE          : std_logic;
+    signal DVI_RX_HS          : std_logic;
+    signal DVI_RX_SCDT        : std_logic;
+    signal DVI_RX_VS          : std_logic;
+    signal DVI_TX_CLK         : std_logic;
+    signal DVI_TX_CTL         : std_logic_vector(3 downto 1);
+    signal DVI_TX_D           : std_logic_vector(23 downto 0);
+    signal DVI_TX_DDCSCL      : std_logic;
+    signal DVI_TX_DDCSDA      : std_logic;
+    signal DVI_TX_DE          : std_logic;
+    signal DVI_TX_DKEN        : std_logic;
+    signal DVI_TX_HS          : std_logic;
+    signal DVI_TX_HTPLG       : std_logic;
+    signal DVI_TX_ISEL        : std_logic;
+    signal DVI_TX_MSEN        : std_logic;
+    signal DVI_TX_PD_N        : std_logic;
+    signal DVI_TX_SCL         : std_logic;
+    signal DVI_TX_SDA         : std_logic;
+    signal DVI_TX_VS          : std_logic;
+    --hsmc i2c 
+    signal HSMC_SCL           : std_logic;
+    signal HSMC_SDA           : std_logic;
+    --unused inout's
+    signal PLL_CLKIN_p        : std_logic;
+    signal ETH_INT_n          : std_logic_vector(3 downto 0);
+    signal ETH_PSE_INT_n      : std_logic;
+    signal ETH_RST_n          : std_logic;
+    signal SSRAM_CLK          : std_logic;
+    signal MAX_I2C_SDAT : std_logic;
+    signal ETH_MDC : std_logic_vector(3 downto 0);
+    signal ETH_PSE_SDA : std_logic;
+    signal FSM_D : std_logic_vector(15 downto 0);
+    signal OTG_D : std_logic_vector(31 downto 0);
+    signal ETH_MDIO : std_logic_vector(3 downto 0);
 begin
-    ddr2_u0 : mt47h128m8 port map(
-        ODT     => ddr2_odt(0),
-        CK      => ddr2_clk(0),
-        CKNeg   => ddr2_clk_n(0),
-        CKE     => ddr2_cke(0),
-        CSNeg   => ddr2_cs_n(0),
-        RASNeg  => ddr2_ras_n,
-        CASNeg  => ddr2_cas_n,
-        WENeg   => ddr2_we_n,
-        BA0     => ddr2_ba(0),
-        BA1     => ddr2_ba(1),
-        BA2     => ddr2_ba(2),
-        A0      => ddr2_addr(0),
-        A1      => ddr2_addr(1),
-        A2      => ddr2_addr(2),
-        A3      => ddr2_addr(3),
-        A4      => ddr2_addr(4),
-        A5      => ddr2_addr(5),
-        A6      => ddr2_addr(6),
-        A7      => ddr2_addr(7),
-        A8      => ddr2_addr(8),
-        A9      => ddr2_addr(9),
-        A10     => ddr2_addr(10),
-        A11     => ddr2_addr(11),
-        A12     => ddr2_addr(12),
-        A13     => ddr2_addr(13),
-        DQ0     => ddr2_dq(0),
-        DQ1     => ddr2_dq(1),
-        DQ2     => ddr2_dq(2),
-        DQ3     => ddr2_dq(3),
-        DQ4     => ddr2_dq(4),
-        DQ5     => ddr2_dq(5),
-        DQ6     => ddr2_dq(6),
-        DQ7     => ddr2_dq(7),
-        RDQS    => open,
-        RDQSNeg => open,
-        DQS     => ddr2_dqs,
-        DQSNeg  => ddr2_dqs_n
-    );
-    
-    ddr2_u1 : mt47h128m8
-        port map(ODT     => ddr2_odt(0),
-                 CK      => ddr2_clk(0),
-                 CKNeg   => ddr2_clk_n(0),
-                 CKE     => ddr2_cke(0),
-                 CSNeg   => ddr2_cs_n(0),
-                 RASNeg  => ddr2_ras_n(0),
-                 CASNeg  => ddr2_cas_n(0),
-                 WENeg   => ddr2_we_n(0),
-                 BA0     => ddr2_ba(0),
-                 BA1     => ddr2_ba(1),
-                 BA2     => ddr2_ba(2),
-                 A0      => ddr2_addr(0),
-                 A1      => ddr2_addr(1),
-                 A2      => ddr2_addr(2),
-                 A3      => ddr2_addr(3),
-                 A4      => ddr2_addr(4),
-                 A5      => ddr2_addr(5),
-                 A6      => ddr2_addr(6),
-                 A7      => ddr2_addr(7),
-                 A8      => ddr2_addr(8),
-                 A9      => ddr2_addr(9),
-                 A10     => ddr2_addr(10),
-                 A11     => ddr2_addr(11),
-                 A12     => ddr2_addr(12),
-                 A13     => ddr2_addr(13),
-                 DQ0     => ddr2_dq(8),
-                 DQ1     => ddr2_dq(9),
-                 DQ2     => ddr2_dq(10),
-                 DQ3     => ddr2_dq(11),
-                 DQ4     => ddr2_dq(12),
-                 DQ5     => ddr2_dq(13),
-                 DQ6     => ddr2_dq(14),
-                 DQ7     => ddr2_dq(15),
-                 RDQS    => open,
-                 RDQSNeg => open,
-                 DQS     => ddr2_dqs,
-                 DQSNeg  => ddr2_dqs_n);
-    
-    ddr2_u2 : mt47h128m8
-        port map(ODT     => ddr2_odt(0),
-                 CK      => ddr2_clk(0),
-                 CKNeg   => ddr2_clk_n(0),
-                 CKE     => ddr2_cke(0),
-                 CSNeg   => ddr2_cs_n(0),
-                 RASNeg  => ddr2_ras_n(0),
-                 CASNeg  => ddr2_cas_n(0),
-                 WENeg   => ddr2_we_n(0),
-                 BA0     => ddr2_ba(0),
-                 BA1     => ddr2_ba(1),
-                 BA2     => ddr2_ba(2),
-                 A0      => ddr2_addr(0),
-                 A1      => ddr2_addr(1),
-                 A2      => ddr2_addr(2),
-                 A3      => ddr2_addr(3),
-                 A4      => ddr2_addr(4),
-                 A5      => ddr2_addr(5),
-                 A6      => ddr2_addr(6),
-                 A7      => ddr2_addr(7),
-                 A8      => ddr2_addr(8),
-                 A9      => ddr2_addr(9),
-                 A10     => ddr2_addr(10),
-                 A11     => ddr2_addr(11),
-                 A12     => ddr2_addr(12),
-                 A13     => ddr2_addr(13),
-                 DQ0     => ddr2_dq(16),
-                 DQ1     => ddr2_dq(17),
-                 DQ2     => ddr2_dq(18),
-                 DQ3     => ddr2_dq(19),
-                 DQ4     => ddr2_dq(20),
-                 DQ5     => ddr2_dq(21),
-                 DQ6     => ddr2_dq(22),
-                 DQ7     => ddr2_dq(23),
-                 RDQS    => open,
-                 RDQSNeg => open,
-                 DQS     => ddr2_dqs,
-                 DQSNeg  => ddr2_dqs_n);
+    clk_generator : process is
+    begin
+        clock <= '0';
+        wait for c_period / 2;
+        clock <= '1';
+        wait for c_period / 2;
+    end process clk_generator;
 
-    ddr2_u3 : mt47h128m8
-        port map(ODT     => ddr2_odt(0),
-                 CK      => ddr2_clk(0),
-                 CKNeg   => ddr2_clk_n(0),
-                 CKE     => ddr2_cke(0),
-                 CSNeg   => ddr2_cs_n(0),
-                 RASNeg  => ddr2_ras_n(0),
-                 CASNeg  => ddr2_cas_n(0),
-                 WENeg   => ddr2_we_n(0),
-                 BA0     => ddr2_ba(0),
-                 BA1     => ddr2_ba(1),
-                 BA2     => ddr2_ba(2),
-                 A0      => ddr2_addr(0),
-                 A1      => ddr2_addr(1),
-                 A2      => ddr2_addr(2),
-                 A3      => ddr2_addr(3),
-                 A4      => ddr2_addr(4),
-                 A5      => ddr2_addr(5),
-                 A6      => ddr2_addr(6),
-                 A7      => ddr2_addr(7),
-                 A8      => ddr2_addr(8),
-                 A9      => ddr2_addr(9),
-                 A10     => ddr2_addr(10),
-                 A11     => ddr2_addr(11),
-                 A12     => ddr2_addr(12),
-                 A13     => ddr2_addr(13),
-                 DQ0     => ddr2_dq(24),
-                 DQ1     => ddr2_dq(25),
-                 DQ2     => ddr2_dq(26),
-                 DQ3     => ddr2_dq(27),
-                 DQ4     => ddr2_dq(28),
-                 DQ5     => ddr2_dq(29),
-                 DQ6     => ddr2_dq(30),
-                 DQ7     => ddr2_dq(31),
-                 RDQS    => open,
-                 RDQSNeg => open,
-                 DQS     => ddr2_dqs,
-                 DQSNeg  => ddr2_dqs_n);
-                 
-    ddr2_u4 : mt47h128m8
-        port map(ODT     => ddr2_odt(1),
-                 CK      => ddr2_clk(1),
-                 CKNeg   => ddr2_clk_n(1),
-                 CKE     => ddr2_cke(1),
-                 CSNeg   => ddr2_cs_n(1),
-                 RASNeg  => ddr2_ras_n(0),
-                 CASNeg  => ddr2_cas_n(0),
-                 WENeg   => ddr2_we_n(0),
-                 BA0     => ddr2_ba(0),
-                 BA1     => ddr2_ba(1),
-                 BA2     => ddr2_ba(2),
-                 A0      => ddr2_addr(0),
-                 A1      => ddr2_addr(1),
-                 A2      => ddr2_addr(2),
-                 A3      => ddr2_addr(3),
-                 A4      => ddr2_addr(4),
-                 A5      => ddr2_addr(5),
-                 A6      => ddr2_addr(6),
-                 A7      => ddr2_addr(7),
-                 A8      => ddr2_addr(8),
-                 A9      => ddr2_addr(9),
-                 A10     => ddr2_addr(10),
-                 A11     => ddr2_addr(11),
-                 A12     => ddr2_addr(12),
-                 A13     => ddr2_addr(13),
-                 DQ0     => ddr2_dq(32),
-                 DQ1     => ddr2_dq(33),
-                 DQ2     => ddr2_dq(34),
-                 DQ3     => ddr2_dq(35),
-                 DQ4     => ddr2_dq(36),
-                 DQ5     => ddr2_dq(37),
-                 DQ6     => ddr2_dq(38),
-                 DQ7     => ddr2_dq(39),
-                 RDQS    => open,
-                 RDQSNeg => open,
-                 DQS     => ddr2_dqs,
-                 DQSNeg  => ddr2_dqs_n);
+    D5M_XCLKIN <= clock;
+    D5M_PIXLCLK <= clock;
+    D5M_FVAL <= '1';
+    D5M_LVAL <= '1';
+    D5M_D <= (others => '1');
 
-    ddr2_u5 : mt47h128m8
-        port map(ODT     => ddr2_odt(1),
-                 CK      => ddr2_clk(1),
-                 CKNeg   => ddr2_clk_n(1),
-                 CKE     => ddr2_cke(1),
-                 CSNeg   => ddr2_cs_n(1),
-                 RASNeg  => ddr2_ras_n(0),
-                 CASNeg  => ddr2_cas_n(0),
-                 WENeg   => ddr2_we_n(0),
-                 BA0     => ddr2_ba(0),
-                 BA1     => ddr2_ba(1),
-                 BA2     => ddr2_ba(2),
-                 A0      => ddr2_addr(0),
-                 A1      => ddr2_addr(1),
-                 A2      => ddr2_addr(2),
-                 A3      => ddr2_addr(3),
-                 A4      => ddr2_addr(4),
-                 A5      => ddr2_addr(5),
-                 A6      => ddr2_addr(6),
-                 A7      => ddr2_addr(7),
-                 A8      => ddr2_addr(8),
-                 A9      => ddr2_addr(9),
-                 A10     => ddr2_addr(10),
-                 A11     => ddr2_addr(11),
-                 A12     => ddr2_addr(12),
-                 A13     => ddr2_addr(13),
-                 DQ0     => ddr2_dq(40),
-                 DQ1     => ddr2_dq(41),
-                 DQ2     => ddr2_dq(42),
-                 DQ3     => ddr2_dq(43),
-                 DQ4     => ddr2_dq(44),
-                 DQ5     => ddr2_dq(45),
-                 DQ6     => ddr2_dq(46),
-                 DQ7     => ddr2_dq(47),
-                 RDQS    => open,
-                 RDQSNeg => open,
-                 DQS     => ddr2_dqs,
-                 DQSNeg  => ddr2_dqs_n);
 
-    ddr2_u6 : mt47h128m8
-        port map(ODT     => ddr2_odt(1),
-                 CK      => ddr2_clk(1),
-                 CKNeg   => ddr2_clk_n(1),
-                 CKE     => ddr2_cke(1),
-                 CSNeg   => ddr2_cs_n(1),
-                 RASNeg  => ddr2_ras_n(0),
-                 CASNeg  => ddr2_cas_n(0),
-                 WENeg   => ddr2_we_n(0),
-                 BA0     => ddr2_ba(0),
-                 BA1     => ddr2_ba(1),
-                 BA2     => ddr2_ba(2),
-                 A0      => ddr2_addr(0),
-                 A1      => ddr2_addr(1),
-                 A2      => ddr2_addr(2),
-                 A3      => ddr2_addr(3),
-                 A4      => ddr2_addr(4),
-                 A5      => ddr2_addr(5),
-                 A6      => ddr2_addr(6),
-                 A7      => ddr2_addr(7),
-                 A8      => ddr2_addr(8),
-                 A9      => ddr2_addr(9),
-                 A10     => ddr2_addr(10),
-                 A11     => ddr2_addr(11),
-                 A12     => ddr2_addr(12),
-                 A13     => ddr2_addr(13),
-                 DQ0     => ddr2_dq(48),
-                 DQ1     => ddr2_dq(49),
-                 DQ2     => ddr2_dq(50),
-                 DQ3     => ddr2_dq(51),
-                 DQ4     => ddr2_dq(52),
-                 DQ5     => ddr2_dq(53),
-                 DQ6     => ddr2_dq(54),
-                 DQ7     => ddr2_dq(55),
-                 RDQS    => open,
-                 RDQSNeg => open,
-                 DQS     => ddr2_dqs,
-                 DQSNeg  => ddr2_dqs_n);
 
-    ddr2_u7 : mt47h128m8
-        port map(ODT     => ddr2_odt(1),
-                 CK      => ddr2_clk(1),
-                 CKNeg   => ddr2_clk_n(1),
-                 CKE     => ddr2_cke(1),
-                 CSNeg   => ddr2_cs_n(1),
-                 RASNeg  => ddr2_ras_n(0),
-                 CASNeg  => ddr2_cas_n(0),
-                 WENeg   => ddr2_we_n(0),
-                 BA0     => ddr2_ba(0),
-                 BA1     => ddr2_ba(1),
-                 BA2     => ddr2_ba(2),
-                 A0      => ddr2_addr(0),
-                 A1      => ddr2_addr(1),
-                 A2      => ddr2_addr(2),
-                 A3      => ddr2_addr(3),
-                 A4      => ddr2_addr(4),
-                 A5      => ddr2_addr(5),
-                 A6      => ddr2_addr(6),
-                 A7      => ddr2_addr(7),
-                 A8      => ddr2_addr(8),
-                 A9      => ddr2_addr(9),
-                 A10     => ddr2_addr(10),
-                 A11     => ddr2_addr(11),
-                 A12     => ddr2_addr(12),
-                 A13     => ddr2_addr(13),
-                 DQ0     => ddr2_dq(56),
-                 DQ1     => ddr2_dq(57),
-                 DQ2     => ddr2_dq(58),
-                 DQ3     => ddr2_dq(59),
-                 DQ4     => ddr2_dq(60),
-                 DQ5     => ddr2_dq(61),
-                 DQ6     => ddr2_dq(62),
-                 DQ7     => ddr2_dq(63),
-                 RDQS    => open,
-                 RDQSNeg => open,
-                 DQS     => ddr2_dqs,
-                 DQSNeg  => ddr2_dqs_n);
-                 
+    d5m_top_lvl : DE4_D5M_TLVL
+        --generic map(c_pictures_count => pictures_count,
+          --          c_pix_bits       => pix_bits)
+        port map(gclkin        => clock,
+                 GCLKOUT_FPGA  => open,
+                 OSC_50_BANK2  => clock,
+                 OSC_50_BANK3  => clock,
+                 OSC_50_BANK4  => clock,
+                 OSC_50_BANK5  => clock,
+                 OSC_50_BANK6  => clock,
+                 OSC_50_BANK7  => clock,
+                 PLL_CLKIN_p   => '0',
+                 MAX_I2C_SCLK  => open,
+                 MAX_I2C_SDAT  => MAX_I2C_SDAT,
+                 SMA_CLKIN_p   => '0',
+                 SMA_CLKOUT_p  => open,
+                 LED           => open,
+                 BUTTON        => "1111",
+                 CPU_RESET_n   => '1',
+                 EXT_IO        => '0',
+                 SW            => "00000000",
+                 SLIDE_SW      => "0000",
+                 SEG0_D        => open,
+                 SEG0_DP       => open,
+                 SEG1_D        => open,
+                 SEG1_DP       => open,
+                 TEMP_INT_n    => '0',
+                 TEMP_SMCLK    => open,
+                 TEMP_SMDAT    => '0',
+                 CSENSE_ADC_FO => open,
+                 CSENSE_CS_n   => open,
+                 CSENSE_SCK    => open,
+                 CSENSE_SDI    => open,
+                 CSENSE_SDO    => '0',
+                 FAN_CTRL      => open,
+                 EEP_SCL       => open,
+                 EEP_SDA       => open,
+                 SD_CLK        => open,
+                 SD_CMD        => '0',
+                 SD_DAT        => "0000",
+                 SD_WP_n       => '0',
+                 ETH_INT_n     => ETH_INT_n,
+                 ETH_MDC       => ETH_MDC,
+                 ETH_MDIO      => ETH_MDIO,
+                 ETH_PSE_INT_n => ETH_PSE_INT_n,
+                 ETH_PSE_RST_n => open,
+                 ETH_PSE_SCK   => open,
+                 ETH_PSE_SDA   => ETH_PSE_SDA,
+                 ETH_RST_n     => ETH_RST_n,
+                 ETH_RX_p      => "0000",
+                 ETH_TX_p      => open,
+                 FSM_A         => open,
+                 FSM_D         => FSM_D,
+                 FLASH_ADV_n   => open,
+                 FLASH_CE_n    => open,
+                 FLASH_CLK     => open,
+                 FLASH_OE_n    => open,
+                 FLASH_RESET_n => open,
+                 FLASH_RYBY_n  => '0',
+                 FLASH_WE_n    => open,
+                 SSRAM_ADV     => open,
+                 SSRAM_BWA_n   => open,
+                 SSRAM_BWB_n   => open,
+                 SSRAM_CE_n    => open,
+                 SSRAM_CKE_n   => open,
+                 SSRAM_CLK     => SSRAM_CLK,
+                 SSRAM_OE_n    => open,
+                 SSRAM_WE_n    => open,
+                 OTG_A         => open,
+                 OTG_CS_n      => open,
+                 OTG_D         => OTG_D,
+                 OTG_DC_DACK   => open,
+                 OTG_DC_DREQ   => '0',
+                 OTG_DC_IRQ    => '0',
+                 OTG_HC_DACK   => open,
+                 OTG_HC_DREQ   => '0',
+                 OTG_HC_IRQ    => '0',
+                 OTG_OE_n      => open,
+                 OTG_RESET_n   => open,
+                 OTG_WE_n      => open,
+                 m1_ddr2_addr     => ddr2_addr,
+                 m1_ddr2_ba       => ddr2_ba,
+                 m1_ddr2_cas_n    => ddr2_cas_n,
+                 m1_ddr2_cke      => ddr2_cke,
+                 m1_ddr2_clk      => ddr2_clk,
+                 m1_ddr2_clk_n    => ddr2_clk_n,
+                 m1_ddr2_cs_n     => ddr2_cs_n,
+                 m1_ddr2_dm       => ddr2_dm,
+                 m1_ddr2_dq       => ddr2_dq,
+                 m1_ddr2_dqs      => ddr2_dqs,
+                 m1_ddr2_dqsn     => ddr2_dqs_n,
+                 m1_ddr2_odt      => ddr2_odt,
+                 m1_ddr2_ras_n    => ddr2_ras_n,
+                 m1_ddr2_sa       => open,
+                 m1_ddr2_scl      => open,
+                 m1_ddr2_sda      => "0",
+                 m1_ddr2_we_n     => ddr2_we_n,
+                 m1_ddr2_oct_rup  => '0',
+                 m1_ddr2_oct_rnd  => '0',
+                 D5M_D         => D5M_D,
+                 D5M_RESETn    => D5M_RESETn,
+                 D5M_FVAL      => D5M_FVAL,
+                 D5M_LVAL      => D5M_LVAL,
+                 D5M_PIXLCLK   => D5M_PIXLCLK,
+                 D5M_SCLK      => D5M_SCLK,
+                 D5M_SDATA     => D5M_SDATA,
+                 D5M_STROBE    => D5M_STROBE,
+                 D5M_TRIGGER   => D5M_TRIGGER,
+                 D5M_XCLKIN    => D5M_XCLKIN,
+                 DVI_EDID_WP   => DVI_EDID_WP,
+                 DVI_RX_CLK    => DVI_RX_CLK,
+                 DVI_RX_CTL    => DVI_RX_CTL,
+                 DVI_RX_D      => DVI_RX_D,
+                 DVI_RX_DDCSCL => DVI_RX_DDCSCL,
+                 DVI_RX_DDCSDA => DVI_RX_DDCSDA,
+                 DVI_RX_DE     => DVI_RX_DE,
+                 DVI_RX_HS     => DVI_RX_HS,
+                 DVI_RX_SCDT   => DVI_RX_SCDT,
+                 DVI_RX_VS     => DVI_RX_VS,
+                 DVI_TX_CLK    => DVI_TX_CLK,
+                 DVI_TX_CTL    => DVI_TX_CTL,
+                 DVI_TX_D      => DVI_TX_D,
+                 DVI_TX_DDCSCL => DVI_TX_DDCSCL,
+                 DVI_TX_DDCSDA => DVI_TX_DDCSDA,
+                 DVI_TX_DE     => DVI_TX_DE,
+                 DVI_TX_DKEN   => DVI_TX_DKEN,
+                 DVI_TX_HS     => DVI_TX_HS,
+                 DVI_TX_HTPLG  => DVI_TX_HTPLG,
+                 DVI_TX_ISEL   => DVI_TX_ISEL,
+                 DVI_TX_MSEN   => DVI_TX_MSEN,
+                 DVI_TX_PD_N   => DVI_TX_PD_N,
+                 DVI_TX_SCL    => DVI_TX_SCL,
+                 DVI_TX_SDA    => DVI_TX_SDA,
+                 DVI_TX_VS     => DVI_TX_VS,
+                 HSMC_SCL      => HSMC_SCL,
+                 HSMC_SDA      => HSMC_SDA);
 
 end architecture;

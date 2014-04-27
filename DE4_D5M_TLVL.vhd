@@ -110,25 +110,25 @@ entity DE4_D5M_TLVL is
         OTG_RESET_n   : out   std_logic;
         OTG_WE_n      : out   std_logic;
         --ddr2 sodimm
-        dimm_addr     : out   std_logic_vector(13 downto 0);
-        dimm_ba       : out   std_logic_vector(2 downto 0);
-        dimm_cas_n    : out   std_logic_vector(0 downto 0);
-        dimm_cke      : out   std_logic_vector(1 downto 0);
-        dimm_clk      : inout std_logic_vector(1 downto 0);
-        dimm_clk_n    : inout std_logic_vector(1 downto 0);
-        dimm_cs_n     : out   std_logic_vector(1 downto 0);
-        dimm_dm       : out   std_logic_vector(7 downto 0);
-        dimm_dq       : inout std_logic_vector(63 downto 0);
-        dimm_dqs      : inout std_logic_vector(7 downto 0);
-        dimm_dqsn     : inout std_logic_vector(7 downto 0);
-        dimm_odt      : out   std_logic_vector(1 downto 0);
-        dimm_ras_n    : out   std_logic_vector(0 downto 0);
-        dimm_sa       : out   std_logic_vector(1 downto 0);
-        dimm_scl      : out   std_logic_vector(0 downto 0);
-        dimm_sda      : in    std_logic_vector(0 downto 0);
-        dimm_we_n     : out   std_logic_vector(0 downto 0);
-        dimm_oct_rup  : in    std_logic;
-        dimm_oct_rnd  : in    std_logic;
+        m1_ddr2_addr     : out   std_logic_vector(13 downto 0);
+        m1_ddr2_ba       : out   std_logic_vector(2 downto 0);
+        m1_ddr2_cas_n    : out   std_logic_vector(0 downto 0);
+        m1_ddr2_cke      : out   std_logic_vector(0 downto 0);
+        m1_ddr2_clk      : inout std_logic_vector(1 downto 0);
+        m1_ddr2_clk_n    : inout std_logic_vector(1 downto 0);
+        m1_ddr2_cs_n     : out   std_logic_vector(0 downto 0);
+        m1_ddr2_dm       : out   std_logic_vector(7 downto 0);
+        m1_ddr2_dq       : inout std_logic_vector(63 downto 0);
+        m1_ddr2_dqs      : inout std_logic_vector(7 downto 0);
+        m1_ddr2_dqsn     : inout std_logic_vector(7 downto 0);
+        m1_ddr2_odt      : out   std_logic_vector(0 downto 0);
+        m1_ddr2_ras_n    : out   std_logic_vector(0 downto 0);
+        m1_ddr2_sa       : out   std_logic_vector(1 downto 0);
+        m1_ddr2_scl      : out   std_logic_vector(0 downto 0);
+        m1_ddr2_sda      : in    std_logic_vector(0 downto 0);
+        m1_ddr2_we_n     : out   std_logic_vector(0 downto 0);
+        m1_ddr2_oct_rup  : in    std_logic;
+        m1_ddr2_oct_rnd  : in    std_logic;
         --D5M-cam
         D5M_D         : in    std_logic_vector(11 downto 0);
         D5M_RESETn    : out   std_logic;
@@ -234,13 +234,13 @@ architecture RTL of DE4_D5M_TLVL is
 
     component Reset_Delay
         port(
-            iCLK   : std_logic;
-            iRST   : std_logic;
-            orst_o : std_logic;
-            orst_1 : std_logic;
-            oRST_2 : std_logic;
-            oRST_3 : std_logic;
-            oRST_4 : std_logic
+            iCLK   : in  std_logic;
+            iRST   : in  std_logic;
+            orst_0 : out std_logic;
+            orst_1 : out std_logic;
+            oRST_2 : out std_logic;
+            oRST_3 : out std_logic;
+            oRST_4 : out std_logic
         );
     end component;
 
@@ -287,7 +287,7 @@ architecture RTL of DE4_D5M_TLVL is
             clk3_set_wr : in    std_logic_vector(3 downto 0);
             clk3_set_rd : out   std_logic_vector(3 downto 0);
             conf_wr     : in    std_logic;
-            conf_rd     : in    std_logic;
+            conf_rd     : in   std_logic;
             conf_ready  : out   std_logic;
             max_sclk    : out   std_logic;
             max_sdat    : inout std_logic
@@ -336,11 +336,11 @@ architecture RTL of DE4_D5M_TLVL is
             disp_color  : in  std_logic_vector(1 downto 0);
             vpg_pclk    : out std_logic;
             vpg_de      : out std_logic;
-            vpg_hs      : std_logic;
-            vpg_vs      : std_logic;
-            vpg_r       : std_logic_vector(7 downto 0);
-            vpg_g       : std_logic_vector(7 downto 0);
-            vpg_b       : std_logic_vector(7 downto 0)
+            vpg_hs      : out std_logic;
+            vpg_vs      : out std_logic;
+            vpg_r       : out std_logic_vector(7 downto 0);
+            vpg_g       : out std_logic_vector(7 downto 0);
+            vpg_b       : out std_logic_vector(7 downto 0)
         );
     end component;
 
@@ -355,8 +355,8 @@ architecture RTL of DE4_D5M_TLVL is
              readp_empty_i : in  std_logic_vector(c_pictures_count - 1 downto 0);
              readp_ready_i : in  std_logic_vector(c_pictures_count - 1 downto 0);
              readp_ack_o   : out std_logic_vector(c_pictures_count - 1 downto 0);
-             data_i        : in  std_logic_vector(c_bits * c_pictures_count - 1 downto 0);
-             data_o        : out std_logic_vector(c_bits * c_pictures_count - 1 downto 0));
+             data_i        : in  std_logic_vector(c_pix_bits * c_pictures_count - 1 downto 0);
+             data_o        : out std_logic_vector(c_pix_bits * c_pictures_count - 1 downto 0));
     end component read_fifo;
 
     component hdr_wrapper
@@ -470,14 +470,11 @@ begin
     iWriteData <= '0' & sCCD_G(11 downto 7) & sCCD_B(11 downto 2) & '0' & sCCD_G(6 downto 2) & sCCD_R(11 downto 2);
 
     reset_n      <= button(0);
-    d5m_trigger  <= '1';
-    D5M_RESETn   <= DLY_RST_0;
-    dvi_tx_isel  <= '0';
-    DVI_TX_SCL   <= '1';
-    DVI_TX_HTPLG <= '1';
-    DVI_TX_SDA   <= '1';
-    DVI_TX_PD_N  <= '1';
-    auto_start   <= '1' when (BUTTON(0) and DLY_RST_3 and not DLY_RST_4) = '1' else '0';
+
+    auto_start   <= '0' when BUTTON(0) = '0' else 
+                    '0' when DLY_RST_3 = '0' else
+                    '0' when DLY_RST_4 = '1' else
+                    '1';
 
     clk1_set_wr <= x"4";
     clk2_set_wr <= x"4";
@@ -497,8 +494,7 @@ begin
     DVI_TX_VS  <= vpg_vs;
     DVI_TX_CLK <= vpg_pclk;
 
-    DVI_TX_D <= pix_data when SLIDE_SW(3) = '1' else data0;
-    DVI_TX_D <= data1 when SLIDE_SW(2) = '1' else data0;
+    DVI_TX_D <= pix_data when SLIDE_SW(3) = '1' else data1 when SLIDE_SW(2) = '1' else data0;
 
     all_read_data <= Read_DATA2(9 downto 2) & Read_DATA1(14 downto 10) & Read_DATA2(14 downto 12) & Read_DATA1(9 downto 2) & Read_DATA2_SODIMM1(9 downto 2) & Read_DATA1_SODIMM1(14 downto 10) & Read_DATA2_SODIMM1(14 downto 12) & Read_DATA1_SODIMM1(9 downto 2);
 
@@ -507,8 +503,6 @@ begin
 
     vpg_reset_n <= '1' when read_rstn = '1' and reset_n_dvi = '1' and locked_fifo_pll = '1'
         else '0';
-
-    auto_start <= '1' when BUTTON(0) = '1' and DLY_RST_3 = '1' and DLY_RST_4 = '0' else '0';
 
     rstn        <= BUTTON(0);
     counter_max <= '1' when auto_set_counter = x"FF" else '0';
@@ -573,7 +567,7 @@ begin
                  clk3_set_wr => clk3_set_wr,
                  clk3_set_rd => open,
                  conf_wr     => conf_wr,
-                 conf_rd     => open,
+                 conf_rd     => '0',
                  conf_ready  => conf_ready,
                  max_sclk    => MAX_I2C_SCLK,
                  max_sdat    => MAX_I2C_SDAT);
@@ -601,20 +595,20 @@ begin
             iIP_INIT_DONE_to_the_Read_Port0      => ip_init_done,
             c_state_from_the_Read_Port0          => open,
             error_from_the_Read_Port0            => open,
-            ddr2_memory_mem_a                    => dimm_addr(13 downto 0),
-            ddr2_memory_mem_ba                   => dimm_ba,
-            ddr2_memory_mem_ck                   => dimm_clk,
-            ddr2_memory_mem_ck_n                 => dimm_clk_n,
-            ddr2_memory_mem_cke                  => dimm_cke,
-            ddr2_memory_mem_cs_n                 => dimm_cs_n,
-            ddr2_memory_mem_dm                   => dimm_dm,
-            ddr2_memory_mem_ras_n                => dimm_ras_n,
-            ddr2_memory_mem_cas_n                => dimm_cas_n,
-            ddr2_memory_mem_we_n                 => dimm_we_n,
-            ddr2_memory_mem_dq                   => dimm_dq,
-            ddr2_memory_mem_dqs                  => dimm_dqs,
-            ddr2_memory_mem_dqs_n                => dimm_dqsn,
-            ddr2_memory_mem_odt                  => dimm_odt,
+            ddr2_memory_mem_a                    => m1_ddr2_addr(13 downto 0),
+            ddr2_memory_mem_ba                   => m1_ddr2_ba,
+            ddr2_memory_mem_ck                   => m1_ddr2_clk,
+            ddr2_memory_mem_ck_n                 => m1_ddr2_clk_n,
+            ddr2_memory_mem_cke                  => m1_ddr2_cke,
+            ddr2_memory_mem_cs_n                 => m1_ddr2_cs_n,
+            ddr2_memory_mem_dm                   => m1_ddr2_dm,
+            ddr2_memory_mem_ras_n                => m1_ddr2_ras_n,
+            ddr2_memory_mem_cas_n                => m1_ddr2_cas_n,
+            ddr2_memory_mem_we_n                 => m1_ddr2_we_n,
+            ddr2_memory_mem_dq                   => m1_ddr2_dq,
+            ddr2_memory_mem_dqs                  => m1_ddr2_dqs,
+            ddr2_memory_mem_dqs_n                => m1_ddr2_dqsn,
+            ddr2_memory_mem_odt                  => m1_ddr2_odt,
             ddr2_global_reset_reset_n            => BUTTON(0),
             iRST_n_F_to_the_Write_Port0          => BUTTON(0),
             iCLK_F_to_the_Write_Port0            => D5M_PIXLCLKn,
@@ -629,14 +623,14 @@ begin
             c_state_from_the_Write_Port0         => open,
             ddr2_phy_clk_out                     => open,
             reset_n                              => reset_n,
-            ddr2_oct_rdn                         => dimm_oct_rnd,
-            ddr2_oct_rup                         => dimm_oct_rup
+            ddr2_oct_rdn                         => m1_ddr2_oct_rnd,
+            ddr2_oct_rup                         => m1_ddr2_oct_rup
         );
 
     Rst_Delay : Reset_Delay port map(
             iCLK   => OSC_50_BANK2,
             iRST   => BUTTON(0),
-            orst_o => DLY_RST_0,
+            orst_0 => DLY_RST_0,
             orst_1 => DLY_RST_1,
             oRST_2 => DLY_RST_2,
             oRST_3 => DLY_RST_3,
@@ -709,7 +703,7 @@ begin
 
     read_fifo_inst : read_fifo
         generic map(c_pictures_count => c_pictures_count,
-                    c_bits           => 8)
+                    c_bits           => c_pix_bits)
         port map(clk_400_i     => read_clk,
                  vpg_clk_i     => pll_108M,
                  vpg_de_i      => vpg_de,
@@ -734,7 +728,7 @@ begin
                  green_o   => pix_data(15 downto 8),
                  blue_o    => pix_data(7 downto 0));
 
-    fan_ctrl : fan_control
+    fan_ctrlinst : fan_control
         port map(clk_i     => OSC_50_BANK2,
                  rst_n_i   => rstn,
                  fan_pwm_o => FAN_CTRL);
